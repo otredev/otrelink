@@ -43,13 +43,17 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Build link page
-        run: npm run build:page
+        run: |
+          echo "Pages base path: '${{ steps.pages.outputs.base_path }}' -> VITE_BASE '$VITE_BASE'"
+          npm run build:page
         env:
           # Set in: Settings → Secrets and variables → Actions → Variables
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_HOME_URL: ${{ vars.VITE_HOME_URL || vars.VITE_API_URL }}
-          # "/otrelink/" for username.github.io/otrelink, "/" with a custom domain
-          VITE_BASE: ${{ steps.pages.outputs.base_path }}/
+          # Sub-path the site is served from: "/" for username.github.io or a custom domain,
+          # "/repo/" for username.github.io/repo. Set the VITE_BASE variable to force it;
+          # otherwise it comes from the Pages settings.
+          VITE_BASE: ${{ vars.VITE_BASE || format('{0}/', steps.pages.outputs.base_path) }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
