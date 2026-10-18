@@ -10,11 +10,10 @@ export const GET = handler(async (req, { params }) => {
   const download = new URL(req.url).searchParams.has('download');
   let asset = await (db.assets.findMeta || db.assets.findById)(id);
   if (!asset) return error(404, 'not_found');
-  // In R2: send the browser to the public copy (no file traffic through this server).
+  // Files in R2 are served only by the public page (MEDIA_URL/<id>), not here.
+  // Without MEDIA_URL, uploads use this address, so this app serves them from R2 itself.
   if (asset.storage === 'r2' && !asset.data) {
-    if (config.mediaUrl) {
-      return new Response(null, { status: 302, headers: { Location: `${config.mediaUrl}/${id}${download ? '?download=1' : ''}`, 'Cache-Control': 'public, max-age=86400' } });
-    }
+    if (config.mediaUrl) return error(404, 'not_found');
     asset = await db.assets.findById(id);
     if (!asset?.data) return error(404, 'not_found');
   }
