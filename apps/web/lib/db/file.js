@@ -10,7 +10,7 @@ const ASSETS = path.join(DIR, 'assets');
 
 export async function createFileDriver() {
   await fs.mkdir(ASSETS, { recursive: true });
-  let state = { users: [], pages: [], events: [], assets: [], bookings: [], push: [], responses: [], reviews: [], orders: [], cards: [], invoices: [], payments: [], tokens: [], referrals: [], referralCampaigns: [], consents: [], subscribers: [], broadcasts: [] };
+  let state = { users: [], pages: [], events: [], assets: [], bookings: [], push: [], responses: [], reviews: [], orders: [], cards: [], invoices: [], payments: [], tokens: [], referrals: [], referralCampaigns: [], consents: [], subscribers: [], broadcasts: [], reports: [] };
   try { state = { ...state, ...JSON.parse(await fs.readFile(FILE, 'utf8')) }; } catch { /* first run */ }
 
   let writing = Promise.resolve();
@@ -95,6 +95,8 @@ export async function createFileDriver() {
       countByUser: async (userId) => state.pages.filter((p) => p.userId === userId).length,
       findById: async (id) => clone(state.pages.find((p) => p.id === id)),
       findBySlug: async (slug) => clone(state.pages.find((p) => p.slug === slug)),
+      listForExplore: async () => clone(state.pages.filter((p) => p.settings?.published && p.settings?.explore && !p.settings?.sensitive)
+        .map((p) => ({ id: p.id, slug: p.slug, userId: p.userId, profile: { title: p.profile?.title || '', avatar: p.profile?.avatar || '' } }))),
       create: async (page) => {
         if (state.pages.some((p) => p.slug === page.slug)) throw Object.assign(new Error('slug_taken'), { code: 'slug_taken' });
         const doc = { id: crypto.randomUUID(), createdAt: now(), updatedAt: now(), ...page };
@@ -126,6 +128,11 @@ export async function createFileDriver() {
           state.events = state.events.filter((e) => e.ts >= cutoff);
         }
         await persist();
+      },
+      viewCounts: async (pageIds, since) => {
+        const ids = new Set(pageIds); const s = since.toISOString(); const counts = {};
+        for (const e of state.events) if (e.type === 'view' && ids.has(e.pageId) && e.ts >= s) counts[e.pageId] = (counts[e.pageId] || 0) + 1;
+        return counts;
       },
       listForPage: async (pageId, since) => {
         const s = since.toISOString();
@@ -358,6 +365,32 @@ export async function createFileDriver() {
         const b = state.broadcasts.find((x) => x.id === String(id));
         if (b) { b.stats = { ...(b.stats || {}), clicks: (b.stats?.clicks || 0) + 1 }; await persist(); }
       },
+    },
+    // Visitors' reports about a page (footer → Report).
+    reports: {
+      create: async (r) => {
+        state.reports ||= [];
+        const doc = { id: crypto.randomUUID(), createdAt: now(), status: 'open', ...r };
+        state.reports.push(doc);
+        await persist();
+        return clone(doc);
+      },
+      list: async ({ status = '', pageId = '', limit = 200 } = {}) => clone((state.reports || []).filter((r) => (!status || r.status === status) && (!pageId || r.pageId === pageId)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit)),
+      findById: async (id) => clone((state.reports || []).find((r) => r.id === id)),
+      update: async (id, patch) => {
+        const r = (state.reports || []).find((x) => x.id === id);
+        if (!r) return null;
+        Object.assign(r, patch, { updatedAt: now() });
+        await persist();
+        return clone(r);
+      },
+      updateMany: async ({ pageId, status }, patch) => {
+        const list = (state.reports || []).filter((r) => r.pageId === pageId && r.status === status);
+        for (const r of list) Object.assign(r, patch, { updatedAt: now() });
+        await persist();
+        return list.length;
+      },
+      counts: async () => (state.reports || []).reduce((c, r) => ({ ...c, [r.status]: (c[r.status] || 0) + 1 }), {}),
     },
     consents: {
       record: async (c) => {

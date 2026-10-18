@@ -28,6 +28,7 @@ export async function createMongoDriver() {
   const invoices = db.collection('invoices');
   const payments = db.collection('payments');
   const consents = db.collection('consents');
+  const reports = db.collection('page_reports');
   const counters = db.collection('counters');
   const limits = db.collection('rate_limits');
   const tokens = db.collection('api_tokens');
@@ -176,6 +177,8 @@ export async function createMongoDriver() {
       countByUser: async (userId) => pages.countDocuments({ userId }),
       findById: async (id) => out(await pages.findOne({ _id: id })),
       findBySlug: async (slug) => out(await pages.findOne({ slug })),
+      /** Published pages that opted in to Explore (not sensitive): the fields Explore shows. */
+      listForExplore: async () => (await pages.find({ 'settings.published': true, 'settings.explore': true, 'settings.sensitive': { $ne: true } }, { projection: { slug: 1, userId: 1, 'profile.title': 1, 'profile.avatar': 1 } }).limit(5000).toArray()).map(out),
       create: async (page) => {
         const ts = new Date().toISOString();
         const doc = { _id: crypto.randomUUID(), createdAt: ts, updatedAt: ts, ...page };
@@ -196,6 +199,11 @@ export async function createMongoDriver() {
         (await events.find({ pageId, ts: { $gte: since } }, { projection: { _id: 0 } }).limit(200000).toArray())
           .map((e) => ({ ...e, ts: e.ts.toISOString() })),
       removeForPage: async (pageId) => { await events.deleteMany({ pageId }); },
+      /** Views per page since a date, for the given pages: { pageId: count }. */
+      viewCounts: async (pageIds, since) => Object.fromEntries((await events.aggregate([
+        { $match: { pageId: { $in: pageIds }, type: 'view', ts: { $gte: since } } },
+        { $group: { _id: '$pageId', n: { $sum: 1 } } },
+      ]).toArray()).map((r) => [r._id, r.n])),
     },
     bookings: {
       create: async (b) => {
@@ -358,6 +366,19 @@ export async function createMongoDriver() {
       incClicks: async (id) => { await broadcasts.updateOne({ _id: String(id) }, { $inc: { 'stats.clicks': 1 } }); },
     },
     // Acceptance of the Terms and Privacy Policy (proof of consent: kept when an account is deleted).
+    // Visitors' reports about a page (footer → Report).
+    reports: {
+      create: async (r) => {
+        const doc = { _id: crypto.randomUUID(), createdAt: new Date().toISOString(), status: 'open', ...r };
+        await reports.insertOne(doc);
+        return out(doc);
+      },
+      list: async ({ status = '', pageId = '', limit = 200 } = {}) => (await reports.find({ ...(status ? { status } : {}), ...(pageId ? { pageId } : {}) }).sort({ createdAt: -1 }).limit(limit).toArray()).map(out),
+      findById: async (id) => out(await reports.findOne({ _id: String(id) })),
+      update: async (id, patch) => out(await reports.findOneAndUpdate({ _id: String(id) }, { $set: { ...patch, updatedAt: new Date().toISOString() } }, { returnDocument: 'after' })),
+      updateMany: async ({ pageId, status }, patch) => (await reports.updateMany({ pageId, status }, { $set: { ...patch, updatedAt: new Date().toISOString() } })).modifiedCount,
+      counts: async () => Object.fromEntries((await reports.aggregate([{ $group: { _id: '$status', n: { $sum: 1 } } }]).toArray()).map((r) => [r._id, r.n])),
+    },
     consents: {
       record: async (c) => {
         const doc = { _id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...c };

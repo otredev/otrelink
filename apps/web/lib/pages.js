@@ -44,6 +44,8 @@ export const toPublicPage = (p, plan, { live = true } = {}) => {
     // Live state from the dashboard "Today" tab (location, open/closed, sold out).
     today: sanitizeToday(p.today),
     notify: notify ? { ...notify, vapidKey: config.vapidPublicKey } : null,
+    // Footer → About this account: month the page was created (YYYY-MM).
+    since: String(p.createdAt || '').slice(0, 7),
   };
 };
 

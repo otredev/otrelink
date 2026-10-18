@@ -3,6 +3,7 @@
 import { mountPage, resolveDesign, pickLanguage, localizePage } from '@otrelink/core';
 import { getGeo, visitContext, privacyMode } from './geo.js';
 import { setupNotify, addAppLinks } from './notify.js';
+import { setupFooter } from './footer.js';
 
 const API = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
 const HOME = import.meta.env.VITE_HOME_URL || API;
@@ -82,10 +83,13 @@ async function main() {
       lang,
       // The ES / EN switch re-renders in place; keep the tab title in that language.
       onLanguageChange: (l) => { lang = l; setMeta(localizePage(page, l)); },
-      footerUrl: HOME,
+      footerUrl: HOME, // "Create your own Otrelink"
+      legalUrl: API, // Cookies and Privacy pages live in the Otrelink app
       apiBase: API, // used by blocks that talk to the server (Booking)
       onTrack: (target) => track(page.id, { type: 'click', target }),
     });
+    // Footer sheets: Report, Explore, About this account.
+    setupFooter({ page, api: API, getLang: () => lang });
     // Push notifications: sign-up sheet (button block, ?subscribe link or QR).
     if (page.notify) {
       addAppLinks(page);

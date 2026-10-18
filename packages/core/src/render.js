@@ -62,8 +62,14 @@ const BASE_CSS = `
 .ol-root .ol-toggle-body{margin-top:8px;animation:ol-toggle-in .2s ease}
 @keyframes ol-toggle-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 .ol-root .ol-embed-title{margin:0 0 8px;font-weight:600;text-align:center}
-.ol-root .ol-footer{margin-top:auto;padding-top:40px;text-align:center;font-size:12px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px}
-.ol-root .ol-footer a{color:var(--ol-text-color);opacity:.75;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:color-mix(in srgb,var(--ol-text-color) 8%,transparent);font-weight:600}
+.ol-root .ol-footer{margin-top:auto;padding:48px 0 8px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+.ol-root .ol-footer-cta{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 24px;border-radius:999px;background:var(--ol-surface);color:var(--ol-surface-fg);font-size:16px;font-weight:600;text-decoration:none;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.ol-root .ol-footer-links{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ol-text-color)}
+.ol-root .ol-footer-row{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 6px}
+.ol-root .ol-footer-row>span{opacity:.55}
+.ol-root .ol-footer-row a,.ol-root .ol-footer-row button{color:inherit;font:inherit;text-decoration:none;background:none;border:0;padding:4px 2px;cursor:pointer;opacity:.85}
+.ol-root .ol-footer-row a:focus-visible,.ol-root .ol-footer-row button:focus-visible,.ol-root .ol-footer-cta:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:6px}
+@media (hover:hover){.ol-root .ol-footer-row a:hover,.ol-root .ol-footer-row button:hover{opacity:1;text-decoration:underline}}
 .ol-root .ol-block-scheduled{opacity:.45;outline:1px dashed currentColor;outline-offset:3px;border-radius:var(--ol-btn-radius)}
 .ol-root .ol-gate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:24px;background:rgba(0,0,0,.55);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .ol-root .ol-gate div{background:#fff;color:#111;border-radius:20px;padding:24px;max-width:340px;text-align:center;font-family:system-ui,sans-serif}
@@ -143,10 +149,38 @@ function renderProfile(page, d) {
     + `${renderSocials(page, d, 'top')}</header>`;
 }
 
+// ── Page footer ────────────────────────────────────────────────
+// "Create your own Otrelink" button, then Cookies · Report · Privacy (always: visitors' data is
+// processed by Otrelink, so its notices must be one tap away) and Explore · About this account.
+// Report, Explore and About open sheets in the public page app (apps/page/src/footer.js);
+// static exports have no app, so they keep only the links.
+// settings.hideFooter hides the Otrelink button and Explore; the legal links stay.
+const FOOTER_TEXT = {
+  en: { cta: 'Create your own Otrelink', cookies: 'Cookies', report: 'Report', privacy: 'Privacy', explore: 'Explore', about: 'About this account' },
+  es: { cta: 'Crea tu propio Otrelink', cookies: 'Cookies', report: 'Denunciar', privacy: 'Privacidad', explore: 'Explorar', about: 'Sobre esta cuenta' },
+};
+
+function renderFooter(page, lang, opts = {}) {
+  const t = FOOTER_TEXT[lang === 'es' ? 'es' : 'en'];
+  // Legal pages live in the Otrelink app (legalUrl); footerUrl is where "Create your own" goes.
+  const legal = String(opts.legalUrl || opts.footerUrl || '').replace(/\/$/, '');
+  const branded = !page.settings?.hideFooter;
+  const sheets = opts.mode !== 'export';
+  const link = (href, label) => `<a href="${esc(href)}" target="_blank" rel="noopener">${label}</a>`;
+  const sheet = (kind, label) => `<button type="button" data-ol-footer="${kind}" aria-haspopup="dialog">${label}</button>`;
+  const row = (items, label) => `<nav class="ol-footer-row" aria-label="${label}">${items.filter(Boolean).join('<span aria-hidden="true">·</span>')}</nav>`;
+  return '<footer class="ol-footer ol-enter">'
+    + (branded ? `<a class="ol-footer-cta" href="${esc(opts.footerUrl || '/')}" target="_blank" rel="noopener">${t.cta}</a>` : '')
+    + '<div class="ol-footer-links">'
+    + row([link(`${legal}/cookies`, t.cookies), sheets && sheet('report', t.report), link(`${legal}/privacy`, t.privacy)], 'Legal')
+    + (sheets ? row([branded && sheet('explore', t.explore), sheet('about', t.about)], 'Otrelink') : '')
+    + '</div></footer>';
+}
+
 /**
  * Render a page.
  * @param {object} page   page document
- * @param {object} opts   { mode: 'live' | 'preview', animate: boolean, now: number, footerUrl: string }
+ * @param {object} opts   { mode: 'live' | 'preview' | 'export', animate: boolean, now: number, footerUrl: string, legalUrl: string }
  * @returns {{ html: string, css: string, fontsHref: string }}
  */
 export function renderPage(rawPage, opts = {}) {
@@ -207,11 +241,7 @@ export function renderPage(rawPage, opts = {}) {
   const blocksHtml = renderBlocks(page.blocks, 0, null);
 
   const wp = wallpapers.resolve(d.wallpaper.type);
-  const footer = page.settings?.hideFooter
-    ? ''
-    : `<footer class="ol-footer ol-enter"><a href="${esc(opts.footerUrl || '/')}" target="_blank" rel="noopener">🔗 Made with Otrelink</a>`
-      // Visitors' data (statistics, forms) is processed by Otrelink: link its privacy notice.
-      + `<a class="ol-footer-privacy" href="${esc(`${String(opts.footerUrl || '').replace(/\/$/, '')}/privacy`)}" target="_blank" rel="noopener">Privacy</a></footer>`;
+  const footer = renderFooter(page, lang, opts);
   const gate = page.settings?.sensitive
     ? `<div class="ol-gate" role="dialog" aria-modal="true"><div><p>${esc(page.settings.sensitiveMessage)}</p><button type="button" data-ol-gate>Continue</button></div></div>`
     : '';

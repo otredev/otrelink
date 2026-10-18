@@ -970,3 +970,21 @@ test('push notifications: sign-up config, topics, broadcasts, repeats and payloa
   assert.equal(allowsBlock(PLANS.pro, 'notify'), false);
   assert.equal(allowsSection(PLANS.business, 'notify'), true);
 });
+
+test('page footer: Create your own, Cookies · Report · Privacy, Explore · About; hideFooter and export', async () => {
+  const { renderPage, sanitizePage } = await import('../src/index.js');
+  const base = sanitizePage({ profile: { title: 'Ana' }, blocks: [], socials: [], settings: { published: true } });
+  const html = (settings, opts) => renderPage({ id: 'p', slug: 'ana', ...base, settings: { ...base.settings, ...settings } }, { mode: 'live', footerUrl: 'https://home.example/', legalUrl: 'https://app.example/', ...opts }).html;
+  const live = html({});
+  assert.ok(live.includes('class="ol-footer-cta" href="https://home.example/"') && live.includes('Create your own Otrelink'));
+  assert.ok(live.includes('href="https://app.example/cookies"') && live.includes('href="https://app.example/privacy"'));
+  for (const k of ['report', 'explore', 'about']) assert.ok(live.includes(`data-ol-footer="${k}"`), k);
+  const hidden = html({ hideFooter: true });
+  assert.ok(!hidden.includes('ol-footer-cta') && !hidden.includes('data-ol-footer="explore"'));
+  assert.ok(hidden.includes('/privacy') && hidden.includes('data-ol-footer="report"'), 'legal links always stay');
+  const exp = html({}, { mode: 'export' });
+  assert.ok(!exp.includes('data-ol-footer=') && exp.includes('https://app.example/privacy'), 'static export: links only');
+  assert.ok(html({ language: 'es' }).includes('Crea tu propio Otrelink'));
+  assert.equal(sanitizePage({ settings: { explore: true } }).settings.explore, true);
+  assert.equal(sanitizePage({}).settings.explore, false, 'Explore is opt-in');
+});

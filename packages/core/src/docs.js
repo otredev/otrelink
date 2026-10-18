@@ -37,7 +37,7 @@ export const cssElements = [
   { selector: '.ol-card', description: 'Card surface used by text (when “Show on a card”), FAQ, countdown…' },
   { selector: '.ol-frame', description: 'Wrapper of embedded players and maps (YouTube, Spotify, Google Maps…).' },
   { selector: '.ol-embed-title', description: 'Optional title shown above videos, maps and FAQs.' },
-  { selector: '.ol-footer', description: '“Made with Otrelink” footer.' },
+  { selector: '.ol-footer', description: 'Footer: “Create your own Otrelink” (.ol-footer-cta) and the link rows (.ol-footer-row).' },
   { selector: '.ol-gate', description: 'Sensitive-content overlay.' },
 ];
 

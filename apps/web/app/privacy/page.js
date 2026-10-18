@@ -29,6 +29,7 @@ export default function PrivacyPage() {
         <li><strong>A random visitor ID</strong> stored in your browser so a returning visit is counted once. See the <Link href="/cookies">Cookie Policy</Link>.</li>
         <li><strong>What you choose to send:</strong> for example your name, email or phone when you book an appointment, place an order, answer a survey, write a review, get a loyalty card or ask for notifications. This information goes to the page owner.</li>
         <li><strong>Push notifications from a page, only if you subscribe:</strong> after you tick the consent box and allow notifications in your browser, we store the push address your browser gives us (a random URL from your browser’s push service, with its encryption keys), the topics you picked, your language, where you subscribed (button, link or QR code) and the date and version of your consent. We don’t ask for your name, email or phone, and the page owner never sees your push address, only how many people subscribed. We count how many people tap each notification, without recording who.</li>
+        <li><strong>Reports about a page:</strong> if you report a page from its footer, we keep the reason, your comment and, only if you give it, your email to answer you. The page owner doesn’t see who sent it.</li>
       </ul>
       <p><strong>Visitors in the European Economic Area, the United Kingdom and Switzerland, and visitors whose browser sends a Global Privacy Control signal:</strong> we do not store the visitor ID or contact the geolocation services. Visits are still counted, without identifying returning visitors, and the location is estimated from the time zone only.</p>
 
@@ -60,6 +61,7 @@ export default function PrivacyPage() {
         <li><strong>Fonts and maps:</strong> Google Fonts serves the typefaces, and map tiles come from OpenStreetMap or Esri; these services receive the visitor’s IP address when the browser loads them.</li>
         <li><strong>Content added by page owners</strong> (YouTube, Spotify, Google Maps, SoundCloud and others) is loaded from those services, which may collect data under their own policies.</li>
         <li><strong>Page owners</strong> receive what their visitors send them and the visit statistics of their pages.</li>
+        <li><strong>Explore:</strong> if a page owner turns on “Show my page in Explore”, the page’s name, username and profile picture appear in the Explore list in the footer of Otrelink pages.</li>
         <li><strong>Authorities</strong>, when the law requires it, or to protect the rights, safety and property of people or of Otrelink.</li>
         <li>A buyer or successor, if the business is sold or merged, under the same protections.</li>
       </ul>
