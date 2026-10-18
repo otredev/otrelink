@@ -31,7 +31,8 @@ export const POST = handler(async (req) => {
 
   const db = await getDb();
   const name = cleanName(file.name);
-  const { id } = await db.assets.create({ userId: user.id, mime: file.type, data, name });
-  const origin = publicOrigin(req);
-  return json({ id, url: `${origin}/api/assets/${id}`, name, size: data.length, type: file.type }, { status: 201 });
+  const { id, storage } = await db.assets.create({ userId: user.id, mime: file.type, data, name });
+  // Files in R2 are served by the public page (MEDIA_URL); the others by this app.
+  const url = storage === 'r2' && config.mediaUrl ? `${config.mediaUrl}/${id}` : `${publicOrigin(req)}/api/assets/${id}`;
+  return json({ id, url, name, size: data.length, type: file.type }, { status: 201 });
 });

@@ -21,7 +21,7 @@ export const invoiceLang = (page, s) => (s.language === 'en' || s.language === '
 
 /** Logo bytes for the PDF: only files uploaded to Otrelink (PNG or JPG). */
 export async function loadLogo(db, url) {
-  const m = String(url || '').match(/\/api\/assets\/([a-f0-9]{32})/);
+  const m = String(url || '').match(/\/(?:api\/assets|media)\/([a-f0-9]{32})/);
   if (!m) return null;
   const a = await db.assets.findById(m[1]).catch(() => null);
   if (!a?.data) return null;

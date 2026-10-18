@@ -5,12 +5,15 @@
 //   pages:  listByUser(userId), findById(id), findBySlug(slug), create(page),
 //           update(id, patch), remove(id), countByUser(userId)
 //   events: insert(event), listForPage(pageId, since), removeForPage(pageId)
-//   assets: create(asset), findById(id), remove(id)
+//   assets: create(asset), findById(id), remove(id), listByUser(userId)
+//   (with R2 configured, uploaded files go to Cloudflare R2: see with-r2.js)
 //
 // To add a driver (Postgres, SQLite, Supabase…): create a file exporting
 // createXDriver() with the interface above and add it to `drivers`.
 
 import { config } from '../config.js';
+import { r2Configured } from '../storage.js';
+import { withR2 } from './with-r2.js';
 
 const drivers = {
   mongo: () => import('./mongo.js').then((m) => m.createMongoDriver()),
@@ -27,7 +30,7 @@ export function getDb() {
   if (!globalThis[KEY]) {
     const load = drivers[config.dbDriver];
     if (!load) throw new Error(`Unknown DB_DRIVER "${config.dbDriver}"`);
-    globalThis[KEY] = load().catch((err) => {
+    globalThis[KEY] = load().then((db) => (r2Configured() ? withR2(db) : db)).catch((err) => {
       // Don't cache a failed connection: the next request retries.
       globalThis[KEY] = null;
       console.error(`[otrelink] Could not connect to the "${config.dbDriver}" database:`, err?.message || err);

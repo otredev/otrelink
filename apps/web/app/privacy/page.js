@@ -52,7 +52,7 @@ export default function PrivacyPage() {
       <h2>4. Who we share data with</h2>
       <p>We share personal data only with providers that help us run Otrelink, under contracts that limit their use of it, and only as needed:</p>
       <ul>
-        <li><strong>Hosting and database</strong> (for example Vercel and MongoDB Atlas) to store and serve the app and your pages.</li>
+        <li><strong>Hosting, database and file storage</strong> (Railway, Cloudflare Pages and R2, MongoDB Atlas) to store and serve the app, your pages and the files you upload.</li>
         <li><strong>Payments:</strong> Stripe and PayPal.</li>
         <li><strong>Email delivery:</strong> Resend, for account and booking emails.</li>
         <li><strong>Browser push services</strong> (Google, Apple, Mozilla, Microsoft) to deliver notifications you turned on.</li>

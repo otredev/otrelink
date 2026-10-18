@@ -452,15 +452,17 @@ export async function createMongoDriver() {
       remove: async (endpoint) => { await pushSubs.deleteOne({ endpoint }); },
     },
     assets: {
-      create: async ({ userId, mime, data, name = '' }) => {
-        const id = crypto.randomUUID().replace(/-/g, '');
-        await assets.insertOne({ _id: id, userId, mime, name, size: data.length, data: new Binary(data), createdAt: new Date() });
+      // storage: 'r2' = the bytes live in Cloudflare R2 (lib/db/with-r2.js), only the details here.
+      create: async ({ id = crypto.randomUUID().replace(/-/g, ''), userId, mime, data, name = '', size, storage = 'db' }) => {
+        await assets.insertOne({ _id: id, userId, mime, name, size: size ?? data.length, storage, ...(storage === 'db' ? { data: new Binary(data) } : {}), createdAt: new Date() });
         return { id };
       },
       findById: async (id) => {
         const doc = await assets.findOne({ _id: id });
-        return doc ? { id: doc._id, userId: doc.userId, mime: doc.mime, name: doc.name || '', data: Buffer.from(doc.data.buffer) } : null;
+        if (!doc) return null;
+        return { id: doc._id, userId: doc.userId, mime: doc.mime, name: doc.name || '', size: doc.size, storage: doc.storage || 'db', ...(doc.data ? { data: Buffer.from(doc.data.buffer) } : {}) };
       },
+      listByUser: async (userId) => (await assets.find({ userId }, { projection: { _id: 1, storage: 1 } }).toArray()).map((d) => ({ id: d._id, storage: d.storage || 'db' })),
       remove: async (id) => { await assets.deleteOne({ _id: id }); },
     },
   };

@@ -12,6 +12,15 @@ export const config = {
   corsOrigins: (process.env.PUBLIC_CORS_ORIGINS || '*').split(',').map((s) => s.trim()).filter(Boolean),
   maxUploadBytes: 3 * 1024 * 1024, // images
   maxPdfBytes: 10 * 1024 * 1024,
+  // Uploaded files in Cloudflare R2 (optional; without it they are kept in the database).
+  r2: {
+    accountId: process.env.R2_ACCOUNT_ID || '',
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+    bucket: process.env.R2_BUCKET || '',
+  },
+  // Public address of the files in R2, e.g. https://otrelink.pages.dev/media
+  mediaUrl: (process.env.MEDIA_URL || '').replace(/\/$/, ''),
   pagesPerUser: 10,
   // Push notifications (generate keys with: npx web-push generate-vapid-keys)
   vapidPublicKey: process.env.VAPID_PUBLIC_KEY || '',

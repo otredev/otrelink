@@ -13,7 +13,8 @@ import { getDb } from './db/index.js';
 import { toPublicPage } from './pages.js';
 
 const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif', 'image/avif': 'avif', 'application/pdf': 'pdf' };
-const ASSET_RE = /(?:https?:\/\/[^\s"'()]+)?\/api\/assets\/([a-f0-9]{32})(?:\?[^\s"'()]*)?/g;
+// Uploaded files: /api/assets/<id> (this app) or /media/<id> (R2, served by the public page).
+const ASSET_RE = /(?:https?:\/\/[^\s"'()]+)?\/(?:api\/assets|media)\/([a-f0-9]{32})(?:\?[^\s"'()]*)?/g;
 
 let runtimePromise;
 /** Bundle @otrelink/core/standalone into one classic script (cached per process). */

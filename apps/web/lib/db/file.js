@@ -507,19 +507,21 @@ export async function createFileDriver() {
       },
     },
     assets: {
-      create: async ({ userId, mime, data, name = '' }) => {
-        const id = crypto.randomUUID().replace(/-/g, '');
-        await fs.writeFile(path.join(ASSETS, id), data);
-        state.assets.push({ id, userId, mime, name, size: data.length, createdAt: now() });
+      // storage: 'r2' = the bytes live in Cloudflare R2 (lib/db/with-r2.js), only the details here.
+      create: async ({ id = crypto.randomUUID().replace(/-/g, ''), userId, mime, data, name = '', size, storage = 'db' }) => {
+        if (storage === 'db') await fs.writeFile(path.join(ASSETS, id), data);
+        state.assets.push({ id, userId, mime, name, size: size ?? data.length, storage, createdAt: now() });
         await persist();
         return { id };
       },
       findById: async (id) => {
         const meta = state.assets.find((a) => a.id === id);
         if (!meta) return null;
+        if (meta.storage === 'r2') return clone(meta);
         const data = await fs.readFile(path.join(ASSETS, id)).catch(() => null);
         return data ? { ...meta, data } : null;
       },
+      listByUser: async (userId) => state.assets.filter((a) => a.userId === userId).map((a) => ({ id: a.id, storage: a.storage || 'db' })),
       remove: async (id) => {
         state.assets = state.assets.filter((a) => a.id !== id);
         await fs.rm(path.join(ASSETS, id), { force: true });
