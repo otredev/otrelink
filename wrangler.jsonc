@@ -1,0 +1,11 @@
+// Cloudflare Workers (static assets): serves the public link page built from apps/page.
+// Build: npm run build:page  ·  Deploy: npx wrangler deploy
+{
+  "name": "otrelink",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./apps/page/dist",
+    // Unknown paths such as /username get index.html with a 200, so the app can route them.
+    "not_found_handling": "single-page-application"
+  }
+}
