@@ -10,7 +10,7 @@ const ASSETS = path.join(DIR, 'assets');
 
 export async function createFileDriver() {
   await fs.mkdir(ASSETS, { recursive: true });
-  let state = { users: [], pages: [], events: [], assets: [], bookings: [], push: [], responses: [], reviews: [], orders: [], cards: [], invoices: [], payments: [], tokens: [], referrals: [], referralCampaigns: [], consents: [] };
+  let state = { users: [], pages: [], events: [], assets: [], bookings: [], push: [], responses: [], reviews: [], orders: [], cards: [], invoices: [], payments: [], tokens: [], referrals: [], referralCampaigns: [], consents: [], subscribers: [], broadcasts: [] };
   try { state = { ...state, ...JSON.parse(await fs.readFile(FILE, 'utf8')) }; } catch { /* first run */ }
 
   let writing = Promise.resolve();
@@ -20,6 +20,8 @@ export async function createFileDriver() {
   };
   const clone = (v) => (v ? structuredClone(v) : null);
   const now = () => new Date().toISOString();
+  // Push subscriber wants everything (no topics), or the broadcast is for everyone, or they share a topic.
+  const topicMatch = (s, topics) => !topics.length || !s.topics?.length || s.topics.some((t) => topics.includes(t));
 
   return {
     name: 'file',
@@ -84,7 +86,7 @@ export async function createFileDriver() {
         state.payments = state.payments.filter((p) => p.userId !== id);
         state.tokens = state.tokens.filter((t) => t.userId !== id);
         state.referrals = state.referrals.filter((r) => r.referrerId !== id && r.refereeId !== id);
-        for (const k of ['events', 'bookings', 'responses', 'reviews', 'orders', 'cards', 'invoices']) state[k] = state[k].filter((x) => !pageIds.has(x.pageId));
+        for (const k of ['events', 'bookings', 'responses', 'reviews', 'orders', 'cards', 'invoices', 'subscribers', 'broadcasts']) state[k] = state[k].filter((x) => !pageIds.has(x.pageId));
         await persist();
       },
     },
@@ -294,6 +296,69 @@ export async function createFileDriver() {
       },
     },
     // Acceptance of the Terms and Privacy Policy (proof of consent: kept when an account is deleted).
+    subscribers: {
+      upsert: async ({ pageId, endpoint, ...fields }) => {
+        let s = state.subscribers.find((x) => x.pageId === pageId && x.endpoint === endpoint);
+        if (s) Object.assign(s, fields, { updatedAt: now() });
+        else { s = { id: crypto.randomUUID(), pageId, endpoint, createdAt: now(), updatedAt: now(), ...fields }; state.subscribers.push(s); }
+        await persist();
+        return clone(s);
+      },
+      findById: async (id) => clone(state.subscribers.find((x) => x.id === String(id))),
+      findByEndpoint: async (pageId, endpoint) => clone(state.subscribers.find((x) => x.pageId === pageId && x.endpoint === endpoint)),
+      update: async (id, patch) => {
+        const s = state.subscribers.find((x) => x.id === id);
+        if (!s) return null;
+        Object.assign(s, patch, { updatedAt: now() });
+        await persist();
+        return clone(s);
+      },
+      remove: async (id) => { state.subscribers = state.subscribers.filter((x) => x.id !== id); await persist(); },
+      removeByEndpoint: async (endpoint) => { state.subscribers = state.subscribers.filter((x) => x.endpoint !== endpoint); await persist(); },
+      removeMany: async ({ pageId }) => { state.subscribers = state.subscribers.filter((x) => x.pageId !== pageId); await persist(); },
+      count: async ({ pageId, topics = [] }) => state.subscribers.filter((x) => x.pageId === pageId && topicMatch(x, topics)).length,
+      summary: async (pageId) => clone(state.subscribers.filter((x) => x.pageId === pageId).map(({ id, topics, source, lang, createdAt }) => ({ id, topics, source, lang, createdAt }))),
+      batch: async ({ pageId, topics = [], after = '', limit = 500 }) => clone(state.subscribers
+        .filter((x) => x.pageId === pageId && (!after || x.id > after) && topicMatch(x, topics))
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .slice(0, limit)
+        .map(({ id, endpoint, keys, lang }) => ({ id, endpoint, keys, lang }))),
+    },
+    broadcasts: {
+      create: async (b) => {
+        const doc = { id: crypto.randomUUID(), createdAt: now(), updatedAt: now(), ...b };
+        state.broadcasts.push(doc);
+        await persist();
+        return clone(doc);
+      },
+      findById: async (id) => clone(state.broadcasts.find((x) => x.id === String(id))),
+      list: async ({ pageId, limit = 50 }) => clone(state.broadcasts.filter((x) => x.pageId === pageId)
+        .sort((a, b) => (b.sendAt || '').localeCompare(a.sendAt || '') || b.createdAt.localeCompare(a.createdAt)).slice(0, limit)),
+      update: async (id, patch) => {
+        const b = state.broadcasts.find((x) => x.id === id);
+        if (!b) return null;
+        Object.assign(b, patch, { updatedAt: now() });
+        await persist();
+        return clone(b);
+      },
+      remove: async (id) => { state.broadcasts = state.broadcasts.filter((x) => x.id !== id); await persist(); },
+      removeMany: async ({ pageId }) => { state.broadcasts = state.broadcasts.filter((x) => x.pageId !== pageId); await persist(); },
+      countBetween: async ({ pageId, from, to, exceptId = '' }) => state.broadcasts
+        .filter((x) => x.pageId === pageId && x.status !== 'canceled' && x.id !== exceptId && x.sendAt >= from && x.sendAt < to).length,
+      claimDue: async (nowIso, staleIso) => {
+        const b = state.broadcasts
+          .filter((x) => (x.status === 'scheduled' && x.sendAt <= nowIso) || (x.status === 'sending' && (x.lockedAt || '') < staleIso))
+          .sort((x, y) => x.sendAt.localeCompare(y.sendAt))[0];
+        if (!b) return null;
+        Object.assign(b, { status: 'sending', lockedAt: nowIso });
+        await persist();
+        return clone(b);
+      },
+      incClicks: async (id) => {
+        const b = state.broadcasts.find((x) => x.id === String(id));
+        if (b) { b.stats = { ...(b.stats || {}), clicks: (b.stats?.clicks || 0) + 1 }; await persist(); }
+      },
+    },
     consents: {
       record: async (c) => {
         const doc = { id: crypto.randomUUID(), createdAt: now(), ...c };

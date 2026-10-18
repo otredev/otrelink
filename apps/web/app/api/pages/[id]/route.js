@@ -47,5 +47,7 @@ export const DELETE = handler(async (_req, { params }) => {
   await db.orders.removeMany({ pageId: page.id });
   await db.cards.removeMany({ pageId: page.id });
   await db.invoices.removeMany({ pageId: page.id });
+  await db.subscribers.removeMany({ pageId: page.id });
+  await db.broadcasts.removeMany({ pageId: page.id });
   return json({ ok: true });
 });

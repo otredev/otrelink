@@ -33,6 +33,8 @@ export async function createMongoDriver() {
   const tokens = db.collection('api_tokens');
   const referrals = db.collection('referrals');
   const campaigns = db.collection('referral_campaigns');
+  const subscribers = db.collection('notify_subscribers');
+  const broadcasts = db.collection('notify_broadcasts');
 
   console.log(`[otrelink] MongoDB connected (database "${config.mongoDb}")`);
 
@@ -65,6 +67,11 @@ export async function createMongoDriver() {
     [payments, { provider: 1, providerId: 1 }, { unique: true }],
     [payments, { userId: 1, createdAt: -1 }, {}],
     [consents, { userId: 1, createdAt: -1 }, {}],
+    // Push notifications to visitors: one subscription per page and browser.
+    [subscribers, { pageId: 1, endpoint: 1 }, { unique: true }],
+    [subscribers, { endpoint: 1 }, {}],
+    [broadcasts, { pageId: 1, createdAt: -1 }, {}],
+    [broadcasts, { status: 1, sendAt: 1 }, {}],
     // Rate-limit counters delete themselves when their window ends.
     [limits, { expiresAt: 1 }, { expireAfterSeconds: 0 }],
     [users, { verifyTokenHash: 1 }, { sparse: true }],
@@ -157,6 +164,7 @@ export async function createMongoDriver() {
           responses.deleteMany({ pageId: { $in: pageIds } }), reviews.deleteMany({ pageId: { $in: pageIds } }),
           orders.deleteMany({ pageId: { $in: pageIds } }), cards.deleteMany({ pageId: { $in: pageIds } }),
           invoices.deleteMany({ pageId: { $in: pageIds } }), payments.deleteMany({ userId: id }),
+          subscribers.deleteMany({ pageId: { $in: pageIds } }), broadcasts.deleteMany({ pageId: { $in: pageIds } }),
           tokens.deleteMany({ userId: id }),
           referrals.deleteMany({ $or: [{ referrerId: id }, { refereeId: id }] }),
         ]);
@@ -297,6 +305,57 @@ export async function createMongoDriver() {
       update: async (id, patch) => out(await invoices.findOneAndUpdate({ _id: id }, { $set: { ...patch, updatedAt: new Date().toISOString() } }, { returnDocument: 'after' })),
       remove: async (id) => { await invoices.deleteOne({ _id: id }); },
       removeMany: async ({ pageId }) => { await invoices.deleteMany({ pageId }); },
+    },
+    // Visitors subscribed to a page's push notifications.
+    subscribers: {
+      /** One per page + browser endpoint: subscribing again refreshes it (same id). */
+      upsert: async ({ pageId, endpoint, ...fields }) => {
+        const ts = new Date().toISOString();
+        const doc = await subscribers.findOneAndUpdate(
+          { pageId, endpoint },
+          { $set: { ...fields, updatedAt: ts }, $setOnInsert: { _id: crypto.randomUUID(), pageId, endpoint, createdAt: ts } },
+          { upsert: true, returnDocument: 'after' },
+        );
+        return out(doc);
+      },
+      findById: async (id) => out(await subscribers.findOne({ _id: String(id) })),
+      findByEndpoint: async (pageId, endpoint) => out(await subscribers.findOne({ pageId, endpoint })),
+      update: async (id, patch) => out(await subscribers.findOneAndUpdate({ _id: id }, { $set: { ...patch, updatedAt: new Date().toISOString() } }, { returnDocument: 'after' })),
+      remove: async (id) => { await subscribers.deleteOne({ _id: id }); },
+      removeByEndpoint: async (endpoint) => { await subscribers.deleteMany({ endpoint }); },
+      removeMany: async ({ pageId }) => { await subscribers.deleteMany({ pageId }); },
+      count: async ({ pageId, topics = [] }) => subscribers.countDocuments({ pageId, ...(topics.length ? { $or: [{ topics: { $size: 0 } }, { topics: { $in: topics } }] } : {}) }),
+      /** Light fields of every subscriber of a page, for the dashboard stats. */
+      summary: async (pageId) => (await subscribers.find({ pageId }, { projection: { topics: 1, source: 1, lang: 1, createdAt: 1 } }).limit(200000).toArray()).map(out),
+      /** Next batch for sending, in id order: subscribers with no topic (= all) or one of `topics`. */
+      batch: async ({ pageId, topics = [], after = '', limit = 500 }) => (await subscribers.find({
+        pageId,
+        ...(after ? { _id: { $gt: after } } : {}),
+        ...(topics.length ? { $or: [{ topics: { $size: 0 } }, { topics: { $in: topics } }] } : {}),
+      }, { projection: { endpoint: 1, keys: 1, lang: 1 } }).sort({ _id: 1 }).limit(limit).toArray()).map(out),
+    },
+    // Notifications the owner sends to subscribers (now or scheduled).
+    broadcasts: {
+      create: async (b) => {
+        const ts = new Date().toISOString();
+        const doc = { _id: crypto.randomUUID(), createdAt: ts, updatedAt: ts, ...b };
+        await broadcasts.insertOne(doc);
+        return out(doc);
+      },
+      findById: async (id) => out(await broadcasts.findOne({ _id: String(id) })),
+      list: async ({ pageId, limit = 50 }) => (await broadcasts.find({ pageId }).sort({ sendAt: -1, createdAt: -1 }).limit(limit).toArray()).map(out),
+      update: async (id, patch) => out(await broadcasts.findOneAndUpdate({ _id: id }, { $set: { ...patch, updatedAt: new Date().toISOString() } }, { returnDocument: 'after' })),
+      remove: async (id) => { await broadcasts.deleteOne({ _id: id }); },
+      removeMany: async ({ pageId }) => { await broadcasts.deleteMany({ pageId }); },
+      /** Not canceled, going out between two instants (daily limit). */
+      countBetween: async ({ pageId, from, to, exceptId = '' }) => broadcasts.countDocuments({ pageId, status: { $ne: 'canceled' }, sendAt: { $gte: from, $lt: to }, ...(exceptId ? { _id: { $ne: exceptId } } : {}) }),
+      /** Take one due broadcast (or one stuck mid-send) so only one worker sends it. */
+      claimDue: async (nowIso, staleIso) => out(await broadcasts.findOneAndUpdate(
+        { $or: [{ status: 'scheduled', sendAt: { $lte: nowIso } }, { status: 'sending', lockedAt: { $lt: staleIso } }] },
+        { $set: { status: 'sending', lockedAt: nowIso } },
+        { sort: { sendAt: 1 }, returnDocument: 'after' },
+      )),
+      incClicks: async (id) => { await broadcasts.updateOne({ _id: String(id) }, { $inc: { 'stats.clicks': 1 } }); },
     },
     // Acceptance of the Terms and Privacy Policy (proof of consent: kept when an account is deleted).
     consents: {

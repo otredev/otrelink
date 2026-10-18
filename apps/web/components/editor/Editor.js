@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Undo2, Redo2, ExternalLink, Eye, X, Loader2, Check, RotateCcw, BookOpen, Lock } from 'lucide-react';
 import { allowsSection, featureForSection } from '@otrelink/core';
-import { LockedSection } from '../PlanLock';
+import { LockedSection, planFor } from '../PlanLock';
 import VerifyEmailBanner from '../VerifyEmailBanner';
 import { api, errorMessage } from '@/lib/client';
 import { sections } from '@/sections';
@@ -172,7 +172,7 @@ export default function Editor({ initialPage, pageUrl, plan, account }) {
                   className={cx('w-full flex items-center gap-2.5 h-10 px-3 rounded-xl text-sm font-medium cursor-pointer transition-colors', tab === s.id ? 'bg-panel text-ink shadow-sm' : 'text-muted hover:text-ink hover:bg-panel/60')}
                 >
                   <s.icon size={17} /> {s.label}
-                  {sectionLocked(s.id) && <Lock size={13} className="ml-auto text-muted/70" aria-label="Pro" />}
+                  {sectionLocked(s.id) && <Lock size={13} className="ml-auto text-muted/70" aria-label={planFor(featureForSection(s.id))} />}
                   {s.badge && !sectionLocked(s.id) && ed[s.badge] > 0 && <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-accent text-white text-[11px] font-bold grid place-items-center">{ed[s.badge]}</span>}
                 </button>
               </li>

@@ -56,6 +56,8 @@ const MESSAGES = {
   email_not_configured: 'Email sending is not set up on the server.',
   email_failed: 'The email could not be sent. Try again in a few minutes.',
   payment_provider_error: 'The payment service didn’t respond. Try again in a minute.',
+  push_not_configured: 'Push notifications aren’t set up on the server yet.',
+  daily_limit: 'You reached the daily limit of notifications for this page.',
 };
 
 export function errorMessage(err) {

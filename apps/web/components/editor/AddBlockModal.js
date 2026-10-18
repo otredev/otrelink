@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import Link from 'next/link';
-import { blockTypes, icon, allowsBlock } from '@otrelink/core';
+import { blockTypes, icon, allowsBlock, featureForBlock } from '@otrelink/core';
 import { Modal, Input, CoreIcon } from '../ui';
 import { ProChip } from '../PlanLock';
 
@@ -37,7 +37,7 @@ export default function AddBlockModal({ open, onClose, onAdd, title, plan }) {
                   className="flex items-start gap-3 text-left rounded-2xl border border-dashed border-line p-3 hover:border-ink/30 transition-colors">
                   <CoreIcon svg={icon(mod.icon, 20)} className="size-10 rounded-xl bg-soft text-muted shrink-0" />
                   <span className="min-w-0">
-                    <span className="flex items-center gap-2 font-semibold text-sm text-muted">{mod.label} <ProChip /></span>
+                    <span className="flex items-center gap-2 font-semibold text-sm text-muted">{mod.label} <ProChip feature={featureForBlock(mod.type)} /></span>
                     <span className="block text-xs text-muted mt-0.5">{mod.description}</span>
                   </span>
                 </Link>

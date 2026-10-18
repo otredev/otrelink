@@ -28,6 +28,7 @@ export default function PrivacyPage() {
         <li><strong>Visit statistics for the page owner:</strong> the pages you view and the links you click, the website that sent you (domain only), the type of device, operating system and browser (worked out from your browser’s user agent), your language, local time, and an approximate location (country, region, city, rounded to about 1 km). The approximate location comes from free IP geolocation services that your browser contacts directly (GeoJS, ipwho.is or ipapi.co); <strong>we never store your IP address</strong> in these statistics.</li>
         <li><strong>A random visitor ID</strong> stored in your browser so a returning visit is counted once. See the <Link href="/cookies">Cookie Policy</Link>.</li>
         <li><strong>What you choose to send:</strong> for example your name, email or phone when you book an appointment, place an order, answer a survey, write a review, get a loyalty card or ask for notifications. This information goes to the page owner.</li>
+        <li><strong>Push notifications from a page, only if you subscribe:</strong> after you tick the consent box and allow notifications in your browser, we store the push address your browser gives us (a random URL from your browser’s push service, with its encryption keys), the topics you picked, your language, where you subscribed (button, link or QR code) and the date and version of your consent. We don’t ask for your name, email or phone, and the page owner never sees your push address, only how many people subscribed. We count how many people tap each notification, without recording who.</li>
       </ul>
       <p><strong>Visitors in the European Economic Area, the United Kingdom and Switzerland, and visitors whose browser sends a Global Privacy Control signal:</strong> we do not store the visitor ID or contact the geolocation services. Visits are still counted, without identifying returning visitors, and the location is estimated from the time zone only.</p>
 
@@ -40,6 +41,7 @@ export default function PrivacyPage() {
           <tr><td>Send account emails (confirm your email, security, changes to these documents)</td><td>Contract; legitimate interest in keeping accounts secure</td></tr>
           <tr><td>Visit statistics for page owners</td><td>Legitimate interest of the page owner in understanding their audience, using minimal data</td></tr>
           <tr><td>Features your visitors use (bookings, orders, reviews…)</td><td>On behalf of the page owner, who must have their own basis</td></tr>
+          <tr><td>Deliver push notifications a visitor subscribed to</td><td>Consent, which can be withdrawn at any time</td></tr>
           <tr><td>Prevent fraud, spam and abuse; keep the service secure</td><td>Legitimate interest; legal obligations</td></tr>
           <tr><td>Keep proof of your acceptance of our Terms and policies</td><td>Legitimate interest in being able to prove the agreement</td></tr>
           <tr><td>Improve Otrelink using aggregated, non-identifying information</td><td>Legitimate interest</td></tr>
@@ -69,6 +71,7 @@ export default function PrivacyPage() {
         <li>Visit statistics: up to 180 days. Pickup orders: up to 180 days.</li>
         <li>Our copy of your payment records and invoices is deleted with your account; Stripe and PayPal keep their own records as the law requires them to.</li>
         <li>Consent records: for 5 years after your account is closed (the time in which a contract claim can be brought under Florida law), then deleted.</li>
+        <li>Push notification subscriptions: until you unsubscribe, your browser’s push service reports the address is no longer valid, or the page is deleted. Then they are deleted right away.</li>
         <li>Security records (rate limits): minutes to days.</li>
       </ul>
 
@@ -80,6 +83,7 @@ export default function PrivacyPage() {
         <li><strong>See, correct and export:</strong> you can see and edit your account details and pages in the dashboard, and export your pages.</li>
         <li><strong>Delete:</strong> you can delete your account at any time in your account settings.</li>
         <li><strong>Visitor statistics:</strong> visitors can clear site data in their browser, block storage, or turn on Global Privacy Control to stop the visitor ID and geolocation.</li>
+        <li><strong>Push notifications:</strong> tap the page’s notifications button and choose “Unsubscribe”, change your topics there, or turn notifications off for the site in your browser settings.</li>
         <li><strong>Emails:</strong> we only send emails needed for your account; we will ask before sending marketing emails, and every marketing email will include a way to unsubscribe.</li>
       </ul>
       <p>Depending on where you live (for example in the European Union, the United Kingdom or certain U.S. states), you may also have the right to access, correct, delete or port your data, to object to or restrict certain processing, to withdraw consent, and to not be discriminated against for using these rights. Write to <Contact /> and we will answer within the time the law allows (normally 30 to 45 days). We may need to verify your identity. If you are in the EU or UK you can also complain to your data protection authority.</p>

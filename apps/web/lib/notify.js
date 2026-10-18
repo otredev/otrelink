@@ -39,6 +39,9 @@ export async function pushToUser(userId, payload) {
   return { sent, devices: subs.length };
 }
 
+/** The configured web-push client, or null when VAPID keys are missing. */
+export const webPushClient = () => (setupPush() ? webpush : null);
+
 export const emailConfigured = () => Boolean(config.resendApiKey && config.emailFrom);
 
 /** Send an email with Resend (https://resend.com). Returns false when email is not set up. */

@@ -6,7 +6,7 @@
 //  `ed` = { page, set(updater, mergeKey), pageUrl, savedSlug, analytics, dirty, pendingBookings, pendingReviews, pendingOrders,
 //          refreshPending, plan, today, setToday }
 // ─────────────────────────────────────────────────────────────
-import { CalendarDays, ClipboardList, Star, Link2, UserRound, Palette, Image as ImageIcon, SlidersHorizontal, Settings, BarChart3, MapPin, ShoppingBag, Stamp, ReceiptText, LayoutTemplate } from 'lucide-react';
+import { CalendarDays, ClipboardList, Star, Link2, UserRound, Palette, Image as ImageIcon, SlidersHorizontal, Settings, BarChart3, MapPin, ShoppingBag, Stamp, ReceiptText, LayoutTemplate, BellRing } from 'lucide-react';
 import LinksSection from './LinksSection';
 import ProfileSection from './ProfileSection';
 import ThemeSection from './ThemeSection';
@@ -22,6 +22,7 @@ import OrdersSection from './OrdersSection';
 import LoyaltySection from './LoyaltySection';
 import InvoicesSection from './InvoicesSection';
 import TemplatesSection from './TemplatesSection';
+import NotifySection from './NotifySection';
 
 export const sections = [
   // Build the page
@@ -39,6 +40,7 @@ export const sections = [
   { id: 'agenda', label: 'Agenda', icon: CalendarDays, Component: AgendaSection, wide: true, badge: 'pendingBookings', group: 'Activity' },
   { id: 'reviews', label: 'Reviews', icon: Star, Component: ReviewsSection, wide: true, badge: 'pendingReviews', group: 'Activity' },
   { id: 'loyalty', label: 'Loyalty', icon: Stamp, Component: LoyaltySection, wide: true, group: 'Activity' },
+  { id: 'notify', label: 'Notifications', icon: BellRing, Component: NotifySection, wide: true, group: 'Activity' },
   { id: 'responses', label: 'Responses', icon: ClipboardList, Component: ResponsesSection, wide: true, group: 'Activity' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, Component: AnalyticsSection, wide: true, group: 'Activity' },
   // Always last

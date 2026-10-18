@@ -1,5 +1,7 @@
 // Page helpers shared by API routes.
-import { sanitizePage, sanitizeToday, stripPrivateFields, stripLockedBlocks, stripLockedFeatures, allowsWallpaper, resolveDesign, pruneTranslations } from '@otrelink/core';
+import { sanitizePage, sanitizeToday, stripPrivateFields, stripLockedBlocks, stripLockedFeatures, allowsWallpaper, resolveDesign, pruneTranslations, allowsSection, publicNotifyConfig } from '@otrelink/core';
+import { config } from './config.js';
+import { pushConfigured } from './notify.js';
 
 /** Shape returned to the dashboard. */
 export const toDashboardPage = (p) => ({
@@ -13,12 +15,16 @@ export const toDashboardPage = (p) => ({
  * Shape returned to the public page app (no owner info).
  * `plan` = the owner's plan: blocks and backgrounds it doesn't include are not
  * shown (e.g. after a downgrade to Free).
+ * `live: false` (static export) leaves out push notifications, which need the page app.
  */
-export const toPublicPage = (p, plan) => {
+export const toPublicPage = (p, plan, { live = true } = {}) => {
   let clean = sanitizePage(p);
   if (plan) clean = stripLockedFeatures(clean, plan);
   let blocks = onlyEnabled(clean.blocks);
   let { design } = clean;
+  // Push sign-ups: plan includes them, the owner turned them on and the server has VAPID keys.
+  const notify = live && pushConfigured() && (!plan || allowsSection(plan, 'notify')) ? publicNotifyConfig(p.notify) : null;
+  if (!notify) blocks = withoutType(blocks, 'notify');
   if (plan) {
     blocks = stripLockedBlocks(blocks, plan);
     if (!allowsWallpaper(plan, design.wallpaper?.type)) {
@@ -37,8 +43,13 @@ export const toPublicPage = (p, plan) => {
     translations: clean.settings.translateButton ? pruneTranslations(clean.translations, blocks) : {},
     // Live state from the dashboard "Today" tab (location, open/closed, sold out).
     today: sanitizeToday(p.today),
+    notify: notify ? { ...notify, vapidKey: config.vapidPublicKey } : null,
   };
 };
+
+function withoutType(blocks, type) {
+  return blocks.filter((b) => b.type !== type).map((b) => (b.children ? { ...b, children: withoutType(b.children, type) } : b));
+}
 
 function onlyEnabled(blocks) {
   return blocks.filter((b) => b.enabled).map((b) => (b.children ? { ...b, children: onlyEnabled(b.children) } : b));

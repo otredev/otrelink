@@ -111,7 +111,7 @@ Made with Otrelink — ${homeUrl}
 
 /** Build the .zip for a stored page. Returns { filename, data: Uint8Array }. */
 export async function exportSite(storedPage, { homeUrl, liveUrl = '', plan }) {
-  const { page, files } = await collectAssets(toPublicPage(storedPage, plan));
+  const { page, files } = await collectAssets(toPublicPage(storedPage, plan, { live: false }));
   const rendered = renderPage(page, { mode: 'export', footerUrl: homeUrl, liveUrl });
   const runtime = await getRuntime();
   const dir = page.slug;

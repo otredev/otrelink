@@ -52,6 +52,7 @@ import status from './status.js';
 import location from './location.js';
 import route from './route.js';
 import loyalty from './loyalty.js';
+import notify from './notify.js';
 
 export const blockTypes = createRegistry('blockTypes', [
   link,
@@ -79,6 +80,7 @@ export const blockTypes = createRegistry('blockTypes', [
   booking,
   survey,
   reviews,
+  notify,
   vcard,
   faq,
   countdown,

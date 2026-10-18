@@ -33,6 +33,7 @@ export const PLAN_FEATURES = {
   booking: { label: 'Booking & agenda', blocks: ['booking'], sections: ['agenda'], group: 'activity' },
   reviews: { label: 'Reviews', blocks: ['reviews'], sections: ['reviews'], group: 'activity' },
   survey: { label: 'Surveys', blocks: ['survey'], sections: ['responses'], group: 'activity' },
+  notifications: { label: 'Push notifications to visitors', blocks: ['notify'], sections: ['notify'], group: 'activity', business: true },
   // Shop & food business
   catalog: { label: 'Product catalog', blocks: ['catalog'], group: 'business' },
   orders: { label: 'Pickup orders', sections: ['orders'], group: 'business' },

@@ -2,7 +2,8 @@
 //   URL:     https://YOUR-APP/api/cron/reminders
 //   Header:  Authorization: Bearer <CRON_SECRET>      (or ?key=<CRON_SECRET>)
 // It finds appointments whose reminder time has arrived and sends a push to
-// the owner (and an email to the visitor when email is configured).
+// the owner (and an email to the visitor when email is configured), and sends
+// the scheduled push notifications of pages to their subscribers.
 import { REMINDER_PRESETS, findBlock } from '@otrelink/core';
 import { getDb } from '@/lib/db';
 import { config } from '@/lib/config';
@@ -11,6 +12,7 @@ import { whenText, emailVisitor } from '@/lib/bookings';
 import { handler, json, error } from '@/lib/http';
 import { downgradeEnded } from '@/lib/billing';
 import { endProTrials } from '@/lib/referrals';
+import { runDueBroadcasts } from '@/lib/broadcast';
 
 const LONGEST = Math.max(...Object.values(REMINDER_PRESETS).flatMap((p) => p.minutes), 0);
 
@@ -60,7 +62,9 @@ async function run(req) {
   const downgraded = await downgradeEnded(db, new Date(now)).catch((err) => { console.error('[otrelink] downgrade failed:', err); return 0; });
   // Free Pro given by referrals that has ended → back to Free.
   const trialsEnded = await endProTrials(db, new Date(now)).catch((err) => { console.error('[otrelink] free Pro end failed:', err); return 0; });
-  return json({ ok: true, checked: upcoming.length, reminded: sent, downgraded, trialsEnded, at: new Date(now).toISOString() });
+  // Push notifications to page visitors that are due (scheduled, repeating, or a send that stopped).
+  const broadcasts = await runDueBroadcasts(db, { budgetMs: 40e3 }).catch((err) => { console.error('[otrelink] broadcasts failed:', err); return 0; });
+  return json({ ok: true, checked: upcoming.length, reminded: sent, downgraded, trialsEnded, broadcasts, at: new Date(now).toISOString() });
 }
 
 export const GET = handler(run);

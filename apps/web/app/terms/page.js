@@ -56,6 +56,7 @@ export default function TermsPage() {
         <li>tell your visitors who you are and how you use their data, and get any consent the law requires (for example, before sending marketing emails);</li>
         <li>only collect what you need and answer your visitors’ requests to see, correct or delete their data;</li>
         <li>not collect sensitive data (health, financial account numbers, government IDs, children’s data) through Otrelink forms unless the law allows it and you protect it properly.</li>
+        <li>if you send push notifications, send only what your sign-up screen promises, keep them honest (no fake urgency, prizes or warnings meant to trick people into tapping), and don’t send content that would break section 6. We may limit how many you send, and pause notifications for pages that receive complaints.</li>
       </ul>
       <p>Our <Link href="/privacy">Privacy Policy</Link> explains how we handle visitor data on our side.</p>
 

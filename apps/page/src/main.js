@@ -2,6 +2,7 @@
 // shared renderer from @otrelink/core, and send analytics beacons.
 import { mountPage, resolveDesign, pickLanguage, localizePage } from '@otrelink/core';
 import { getGeo, visitContext, privacyMode } from './geo.js';
+import { setupNotify, addAppLinks } from './notify.js';
 
 const API = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
 const HOME = import.meta.env.VITE_HOME_URL || API;
@@ -74,17 +75,22 @@ async function main() {
     if (!res.ok) throw new Error(String(res.status));
     const { page } = await res.json();
     // Second language: ?lang=, the visitor's last choice or their browser's language.
-    const lang = pickLanguage(page, window);
+    let lang = pickLanguage(page, window);
     setMeta(localizePage(page, lang));
     mountPage(app, page, {
       mode: 'live',
       lang,
       // The ES / EN switch re-renders in place; keep the tab title in that language.
-      onLanguageChange: (l) => setMeta(localizePage(page, l)),
+      onLanguageChange: (l) => { lang = l; setMeta(localizePage(page, l)); },
       footerUrl: HOME,
       apiBase: API, // used by blocks that talk to the server (Booking)
       onTrack: (target) => track(page.id, { type: 'click', target }),
     });
+    // Push notifications: sign-up sheet (button block, ?subscribe link or QR).
+    if (page.notify) {
+      addAppLinks(page);
+      setupNotify({ page, api: API, getLang: () => lang, privacyUrl: `${API}/privacy` });
+    }
     // The visit waits up to 3 s for the location; it is sent anyway if the visitor leaves first.
     let sent = false;
     const sendView = () => { if (!sent) { sent = true; track(page.id, { type: 'view', referrer: document.referrer }); } };

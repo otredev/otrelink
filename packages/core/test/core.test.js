@@ -745,8 +745,8 @@ test('API access (tokens & MCP) is Business only, and the admin can turn it off'
   assert.equal(resolvePlan({ id: 'legacy' }).features.api, false);
   assert.equal(resolvePlan({ plan: 'business' }).features.api, true);
   assert.equal(resolvePlan({ plan: 'business', limits: sanitizeLimits({ features: { api: false } }) }).features.api, false);
-  // Pro keeps every other feature.
-  assert.ok(Object.entries(PLANS.pro.features).every(([k, v]) => k === 'api' || v));
+  // Pro keeps every other feature except the Business-only ones (API, push notifications to visitors).
+  assert.ok(Object.entries(PLANS.pro.features).every(([k, v]) => ['api', 'notifications'].includes(k) || v));
   const g = groupedFeatures().find((x) => x.id === 'integrations');
   assert.deepEqual(g.features, [{ key: 'api', label: 'API tokens & MCP', free: false, business: true }]);
 });
@@ -929,4 +929,44 @@ test('second language: owner translations are cleaned, applied by id and switcha
   assert.equal(pickLanguage(page, { location: { search: '' }, navigator: { languages: ['es-VE', 'en'] } }), 'es');
   assert.equal(pickLanguage(page, { location: { search: '' }, navigator: { languages: ['fr'] } }), 'en');
   assert.deepEqual(Object.keys(pruneTranslations(page.translations, [page.blocks[0]]).es.blocks), ['b1']);
+});
+
+test('push notifications: sign-up config, topics, broadcasts, repeats and payload', async () => {
+  const { sanitizeNotifyConfig, publicNotifyConfig, sanitizeTopics, sanitizeBroadcast, broadcastErrors, nextOccurrence, pushPayload, allowsBlock, allowsSection, PLANS } = await import('../src/index.js');
+  const cfg = sanitizeNotifyConfig({ enabled: 1, title: '  Deals\nfirst ', topics: [{ id: 'deals', label: 'Deals' }, { id: 'deals', label: 'Dup' }, { label: '' }, { id: 'ev<>', label: 'Events' }] });
+  assert.equal(cfg.title, 'Deals first');
+  assert.deepEqual(cfg.topics.map((t) => t.id), ['deals', 'ev']);
+  assert.equal(publicNotifyConfig({ enabled: false }), null);
+  assert.deepEqual(sanitizeTopics(['deals', 'nope', 'deals'], cfg), ['deals']);
+
+  const b = sanitizeBroadcast({ title: 'Hi {page}', body: 'x', url: 'javascript:alert(1)', image: 'https://img.example/a.jpg',
+    actions: [{ label: 'Go', url: 'https://a.example' }, { label: 'Bad', url: 'ftp://x' }, { label: 'Three', url: 'https://c.example' }, { label: 'Four', url: 'https://d.example' }],
+    schedule: { mode: 'at', sendAt: '2030-01-01T10:00:00Z', repeat: 'weekly', tz: 'Not/AZone' } });
+  assert.equal(b.url, '');
+  assert.equal(b.actions.length, 2);
+  assert.equal(b.schedule.tz, 'UTC');
+  assert.deepEqual(broadcastErrors(b, { now: Date.parse('2029-12-01') }), []);
+  assert.ok(broadcastErrors(sanitizeBroadcast({ schedule: { mode: 'at', sendAt: '2000-01-01' } })).includes('send_at_past'));
+  assert.equal(sanitizeBroadcast({ schedule: { mode: 'now', repeat: 'daily' } }).schedule.repeat, 'none');
+
+  // 9:00 in New York stays 9:00 across the DST change (Nov 1 2026).
+  const first = '2026-10-31T13:00:00.000Z'; // 9:00 EDT
+  const next = nextOccurrence(first, 'daily', 'America/New_York');
+  assert.equal(next, '2026-11-01T14:00:00.000Z'); // 9:00 EST
+  assert.equal(nextOccurrence('2026-01-31T12:00:00.000Z', 'monthly', 'UTC'), '2026-02-28T12:00:00.000Z');
+  assert.equal(nextOccurrence(first, 'weekly', 'UTC', '2026-11-03T00:00:00.000Z'), '');
+  assert.equal(nextOccurrence(first, 'none'), '');
+
+  const page = { id: 'p1', slug: 'bakery', profile: { title: 'Sweet', avatar: 'https://img.example/me.png' } };
+  const es = sanitizeBroadcast({ title: 'Hi {page}', body: 'B', es: { title: 'Hola {page}', body: 'C' } });
+  assert.equal(pushPayload(es, page, { lang: 'es', pageUrl: 'https://otrelink.pages.dev/' }).title, 'Hola Sweet');
+  const p = pushPayload(es, page, { pageUrl: 'https://otrelink.pages.dev/', campaignId: 'c1' });
+  assert.equal(p.title, 'Hi Sweet');
+  assert.equal(p.url, 'https://otrelink.pages.dev/bakery');
+  assert.equal(p.tag, 'ol-p1-c1');
+
+  assert.equal(allowsBlock(PLANS.free, 'notify'), false);
+  assert.equal(allowsSection(PLANS.pro, 'notify'), false); // Business only
+  assert.equal(allowsBlock(PLANS.pro, 'notify'), false);
+  assert.equal(allowsSection(PLANS.business, 'notify'), true);
 });
