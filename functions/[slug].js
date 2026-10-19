@@ -27,7 +27,7 @@ async function loadPage(api, slug, request) {
         // The API rate-limits per visitor: pass the visitor's IP instead of Cloudflare's.
         'X-Forwarded-For': request.headers.get('CF-Connecting-IP') || '',
       },
-      cf: { cacheTtl: 300, cacheEverything: true },
+      cf: { cacheTtlByStatus: { '200-299': 300, '404': 60, '500-599': 0 }, cacheEverything: true },
     });
     if (res.status === 404) return { missing: true };
     if (!res.ok) return {};

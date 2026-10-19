@@ -10,7 +10,7 @@ export async function onRequestGet({ request, env }) {
   let pages = [];
   if (api) {
     try {
-      const res = await fetch(`${api}/api/public/sitemap`, { headers: { Accept: 'application/json' }, cf: { cacheTtl: 3600, cacheEverything: true } });
+      const res = await fetch(`${api}/api/public/sitemap`, { headers: { Accept: 'application/json' }, cf: { cacheTtlByStatus: { '200-299': 3600, '400-599': 0 }, cacheEverything: true } });
       if (res.ok) pages = (await res.json()).pages || [];
     } catch { /* an empty sitemap is still valid */ }
   }
