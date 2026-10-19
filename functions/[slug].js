@@ -41,6 +41,9 @@ export async function onRequestGet({ request, params, env, next }) {
   const slug = String(params.slug || '');
   // Files (sw.js, favicon.svg, 404.html…) and anything that can't be a page.
   if (!slug || slug.includes('.') || !/^[\w-]{1,60}$/.test(slug)) return next();
+  // Google Search Console check (public/google3d948c8e4fd24b20.html): Cloudflare Pages serves
+  // it without the extension, which looks like a slug.
+  if (slug === 'google3d948c8e4fd24b20') return next();
 
   const api = String(env.VITE_API_URL || '').replace(/\/$/, '');
   const shell = await env.ASSETS.fetch(new URL('/', request.url));
