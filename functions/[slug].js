@@ -68,6 +68,8 @@ export async function onRequestGet({ request, params, env, next }) {
 
   const meta = { description: desc, 'og:title': title, 'og:description': desc, 'og:image': image };
   const extra = [
+    // "Hide from search engines" (Settings): tell crawlers not to list the page.
+    ...(s.noIndex ? [['name', 'robots', 'noindex']] : []),
     ['property', 'og:url', url], ['property', 'og:type', 'profile'], ['property', 'og:site_name', 'Otrelink'],
     ['name', 'twitter:title', title], ['name', 'twitter:description', desc],
     ...(image ? [['name', 'twitter:image', image], ['property', 'og:image:alt', title]] : []),

@@ -6,7 +6,7 @@
 //   blocks:  [{ id, type, enabled, data: {...}, options: { animation, showFrom, showUntil }, children?: [...] }],
 //            (children only on container types such as Collection, nested up to MAX_DEPTH)
 //   design:  { theme, ...design fields, wallpaper: { type, ...wallpaper fields } },
-//   settings:{ published, language, translateButton, seoTitle, seoDescription, ogImage, hideFooter, explore, noSelect, noRightClick, sensitive, sensitiveMessage }
+//   settings:{ published, language, translateButton, seoTitle, seoDescription, ogImage, hideFooter, noIndex, explore, noSelect, noRightClick, sensitive, sensitiveMessage }
 //   translations: { es: { profile, settings, blocks: { [blockId]: {...} } } } — the second language (translate.js)
 //   today:   { status, place, address, lat, lon, note, until, placeAt, soldOut, ordersPaused, updatedAt }
 //            set from the dashboard "Today" panel, saved apart from the rest (see sanitizeToday)
@@ -51,6 +51,8 @@ export const settingsFields = [
   { key: 'ogImage', type: 'image', label: 'Sharing image', help: 'Shown when your link is shared on social media.' },
   { key: 'hideFooter', type: 'toggle', label: 'Hide the Otrelink button in the footer', default: false,
     help: 'Hides “Create your own Otrelink” and Explore. The Cookies, Report and Privacy links always stay.' },
+  { key: 'noIndex', type: 'toggle', label: 'Hide from search engines', default: false,
+    help: 'Asks Google and other search engines not to show this page in their results, and leaves it out of the Otrelink sitemap. People with the link can still open it.' },
   { key: 'explore', type: 'toggle', label: 'Show my page in Explore', default: false,
     help: 'Explore, in the footer of every Otrelink page, lists the 10 most visited pages that turned this on. Pages with the sensitive content warning are never listed.' },
   { key: 'noSelect', type: 'toggle', label: 'Block text selection', default: false,

@@ -95,6 +95,7 @@ export async function createFileDriver() {
       countByUser: async (userId) => state.pages.filter((p) => p.userId === userId).length,
       findById: async (id) => clone(state.pages.find((p) => p.id === id)),
       findBySlug: async (slug) => clone(state.pages.find((p) => p.slug === slug)),
+      listForSitemap: async () => clone(state.pages.filter((p) => p.settings?.published && !p.settings?.sensitive && !p.settings?.noIndex).map((p) => ({ id: p.id, slug: p.slug, userId: p.userId, updatedAt: p.updatedAt }))),
       listForExplore: async () => clone(state.pages.filter((p) => p.settings?.published && p.settings?.explore && !p.settings?.sensitive)
         .map((p) => ({ id: p.id, slug: p.slug, userId: p.userId, profile: { title: p.profile?.title || '', avatar: p.profile?.avatar || '' } }))),
       create: async (page) => {

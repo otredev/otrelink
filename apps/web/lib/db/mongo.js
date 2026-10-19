@@ -177,6 +177,8 @@ export async function createMongoDriver() {
       countByUser: async (userId) => pages.countDocuments({ userId }),
       findById: async (id) => out(await pages.findOne({ _id: id })),
       findBySlug: async (slug) => out(await pages.findOne({ slug })),
+      /** Published pages search engines may list (sitemap): not sensitive, not hidden from search. */
+      listForSitemap: async () => (await pages.find({ 'settings.published': true, 'settings.sensitive': { $ne: true }, 'settings.noIndex': { $ne: true } }, { projection: { slug: 1, userId: 1, updatedAt: 1 } }).limit(50000).toArray()).map(out),
       /** Published pages that opted in to Explore (not sensitive): the fields Explore shows. */
       listForExplore: async () => (await pages.find({ 'settings.published': true, 'settings.explore': true, 'settings.sensitive': { $ne: true } }, { projection: { slug: 1, userId: 1, 'profile.title': 1, 'profile.avatar': 1 } }).limit(5000).toArray()).map(out),
       create: async (page) => {
